@@ -2,44 +2,53 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
-use App\User;
+use App\Repositories\UserRepository;
 use App\Providers\ResponseProvider;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    /**
-     * Create a new AuthController instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    protected $user;
+
+    public function __construct(UserRepository $user)
     {
         $this->middleware('jwt', ['except' => ['login', 'register']]);
+        $this->user = $user;
     }
 
-    /**
-     * Get a JWT via given credentials.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function register()
+
+    public function register(Request $request)
     {
-        $data = request(['name', 'email', 'password']);
-        $user = new User();
-        $user->name = $data['name'];
-        $user->email = $data['email'];
-        $user->password = Hash::make($data['password']);
-        $user->save();
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|unique:users',
+            'name' => 'required|string',
+            'password' => 'required'
+        ]);
+
+        if ($validator->fails())
+            return ResponseProvider::http(false, $validator->messages(), NULL, 422);
+
+        $this->user->create(
+            $request->input('name'),
+            $request->input('email'),
+            $request->input('password'),
+        );
 
         return ResponseProvider::http(true, "Register Success", NULL, 200);
     }
 
-    public function login()
+    public function login(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email ',
+            'password' => 'required'
+        ]);
+
+        if ($validator->fails())
+            return ResponseProvider::http(false, $validator->messages(), NULL, 422);
+
         $credentials = request(['email', 'password']);
 
         if (!$token = auth()->attempt($credentials)) {

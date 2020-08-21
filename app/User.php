@@ -26,7 +26,7 @@ class User extends Authenticatable implements JWTSubject
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'password', 'remember_token','email_verified_at','updated_at','created_at'
     ];
 
     /**
@@ -46,5 +46,15 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    public function Account()
+    {
+        return $this->hasMany('App\Account', 'id', 'user_id');
+    }
+
+    public function Transaction()
+    {
+        return $this->hasMany('App\Transaction', 'id', 'user_id');
     }
 }
