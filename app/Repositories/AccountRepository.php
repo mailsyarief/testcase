@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Account;
-use Illuminate\Support\Facades\Hash;
 
 class AccountRepository
 {
@@ -34,20 +33,63 @@ class AccountRepository
         return $account;
     }
 
+    public function update(
+        $account_id,
+        $account_name,
+        $account_type,
+        $account_description,
+        $account_limit,
+        $account_current_cash,
+        $account_reset_date
+    ) {
+        $account = Account::find($account_id);
+        $account->account_name = $account_name;
+        $account->account_type = $account_type;
+        $account->account_description = $account_description;
+        $account->account_limit = $account_limit;
+        $account->account_current_cash = $account_current_cash;
+        $account->account_reset_date = $account_reset_date;
+        $account->save();
+        return $account;
+    }
+
     public function findById($id)
     {
         return Account::find($id);
     }
 
-    public function findAll($limit, $filter)
+    public function delete($id)
     {
-        // $account = Account::whereOrLike([
-        //     'account_name',
-        //     'account_type',
-        //     'account_description',
-        //     'account_limit'
-        // ], $filter)->get();
+        $account = Account::find($id);
+        return $account->delete();
+    }
 
-        // return $account->paginate($limit);
+    public function restore($id)
+    {
+        return Account::withTrashed()
+            ->where('id', $id)
+            ->restore();
+    }
+
+    public function findByIdAndUserId($id, $user_id)
+    {
+        return Account::where('id', $id)->where('user_id', $user_id)->first();
+    }
+
+    public function findAll($user_id, $filter, $limit)
+    {
+        return Account::where('user_id', $user_id)
+            ->Where('account_name', 'like', '%' . $filter . '%')
+            ->orWhere('account_type', 'like', '%' . $filter . '%')
+            ->orWhere('account_description', 'like', '%' . $filter . '%')->paginate($limit);
+    }
+
+    public function findAllDeleted($user_id, $filter, $limit)
+    {
+        return Account::withTrashed()
+            ->where('user_id', $user_id)
+            ->Where('account_name', 'like', '%' . $filter . '%')
+            ->orWhere('account_type', 'like', '%' . $filter . '%')
+            ->orWhere('account_description', 'like', '%' . $filter . '%')->paginate($limit);
     }
 }

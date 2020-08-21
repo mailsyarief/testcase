@@ -45,9 +45,17 @@ class AccountController extends Controller
         return ResponseProvider::http(true, "Create Account Success", NULL, 200);
     }
 
-    public function getOne($id)
+    public function restore($account_id)
     {
-        $account = $this->account->findById($id);
+        $account = $this->account->restore($account_id);
+        if (!$account) return ResponseProvider::http(true, "Account Not Found", NULL, 200);
+        return ResponseProvider::http(true, "Account Restored", NULL, 200);
+    }
+
+    public function getOne($account_id)
+    {
+        $userData = auth()->user();
+        $account = $this->account->findByIdAndUserId($account_id, $userData->id);
 
         if (!$account) return ResponseProvider::http(true, "Account Not Found", NULL, 200);
 
@@ -57,11 +65,70 @@ class AccountController extends Controller
         return ResponseProvider::http(true, "Account Details", $account, 200);
     }
 
+    public function delete($account_id)
+    {
+        $userData = auth()->user();
+        $account = $this->account->findByIdAndUserId($account_id, $userData->id);
+        if (!$account) return ResponseProvider::http(true, "Account Not Found", NULL, 200);
+
+        $this->account->delete($account_id);
+
+        return ResponseProvider::http(true, "Account Deleted", NULL, 200);
+    }
+
     public function getAll(Request $request)
     {
+        $userData = auth()->user();
         $limit = $request->query('limit');
         $filter = $request->query('filter');
-        $accounts = $this->account->findAll($limit, $filter);
+
+        $accounts = $this->account->findAll($userData->id, $filter, $limit);
+
         return ResponseProvider::http(true, "List Account", $accounts, 200);
+    }
+
+    public function getDeleted(Request $request)
+    {
+        $userData = auth()->user();
+        $limit = $request->query('limit');
+        $filter = $request->query('filter');
+
+        $accounts = $this->account->findAllDeleted($userData->id, $filter, $limit);
+
+        return ResponseProvider::http(true, "List Account", $accounts, 200);
+    }
+
+    public function update($account_id, Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'account_name' => 'required',
+            'account_type' => 'required',
+            'account_description' => 'required',
+            'account_limit' => 'required',
+            'account_current_cash' => 'required',
+            'account_reset_date' => 'required',
+        ]);
+
+        if ($validator->fails())
+            return ResponseProvider::http(false, $validator->messages(), NULL, 422);
+
+        $userData = auth()->user();
+        $account = $this->account->findByIdAndUserId($account_id, $userData->id);
+
+        if (!$account)
+            return ResponseProvider::http(true, "Account Not Found", NULL, 200);
+
+        $this->account->update(
+            $account_id,
+            $request->input('account_name'),
+            $request->input('account_type'),
+            $request->input('account_description'),
+            $request->input('account_limit'),
+            $request->input('account_current_cash'),
+            $request->input('account_reset_date'),
+        );
+
+        return ResponseProvider::http(true, "Update Account Success", NULL, 200);
     }
 }
