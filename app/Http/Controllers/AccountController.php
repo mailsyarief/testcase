@@ -60,7 +60,6 @@ class AccountController extends Controller
         if (!$account) return ResponseProvider::http(true, "Account Not Found", NULL, 200);
 
         $account->User;
-        $account->Transaction;
 
         return ResponseProvider::http(true, "Account Details", $account, 200);
     }
@@ -106,7 +105,6 @@ class AccountController extends Controller
             'account_type' => 'required',
             'account_description' => 'required',
             'account_limit' => 'required',
-            'account_current_cash' => 'required',
             'account_reset_date' => 'required',
         ]);
 
@@ -125,7 +123,6 @@ class AccountController extends Controller
             $request->input('account_type'),
             $request->input('account_description'),
             $request->input('account_limit'),
-            $request->input('account_current_cash'),
             $request->input('account_reset_date'),
         );
 

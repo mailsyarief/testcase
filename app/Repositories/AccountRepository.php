@@ -27,7 +27,6 @@ class AccountRepository
         $account->account_type = $account_type;
         $account->account_description = $account_description;
         $account->account_limit = $account_limit;
-        $account->account_current_cash = 0;
         $account->account_reset_date = $account_reset_date;
         $account->save();
         return $account;
@@ -39,7 +38,6 @@ class AccountRepository
         $account_type,
         $account_description,
         $account_limit,
-        $account_current_cash,
         $account_reset_date
     ) {
         $account = Account::find($account_id);
@@ -47,7 +45,6 @@ class AccountRepository
         $account->account_type = $account_type;
         $account->account_description = $account_description;
         $account->account_limit = $account_limit;
-        $account->account_current_cash = $account_current_cash;
         $account->account_reset_date = $account_reset_date;
         $account->save();
         return $account;

@@ -16,8 +16,8 @@ class CreateTransactionHistoriesTable extends Migration
         Schema::create('transaction_histories', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('transaction_id');
-            $table->integer('user_id');
-            $table->integer('history_note');
+            $table->integer('user_id'); 
+            $table->string('history_note');
             $table->decimal('history_amount_before', 12, 2);
             $table->decimal('history_amount_after', 12, 2);
             $table->softDeletes();

@@ -16,7 +16,6 @@ class Account extends Model
         'account_type',
         'account_description',
         'account_limit',
-        'account_current_cash',
         'account_reset_date'
     ];
 
@@ -26,7 +25,7 @@ class Account extends Model
 
     public function Transaction()
     {
-        return $this->hasMany('App\Transaction', 'id', 'account_id');
+        return $this->hasMany('App\Transaction', 'account_id', 'id');
     }
 
     public function User()

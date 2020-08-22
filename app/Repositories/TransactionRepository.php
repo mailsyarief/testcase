@@ -1,0 +1,145 @@
+<?php
+
+namespace App\Repositories;
+
+use App\Transaction;
+use App\TransactionHistory;
+
+class TransactionRepository
+{
+    protected $transaction, $histroy;
+
+    public function __construct(Transaction $transaction, TransactionHistory $histroy)
+    {
+        $this->transaction = $transaction;
+        $this->histroy = $histroy;
+    }
+
+    public function create(
+        $account_id,
+        $user_id,
+        $transaction_date,
+        $transaction_reference,
+        $transaction_amount,
+        $transaction_type,
+        $transaction_note
+    ) {
+        $transaction = new Transaction();
+        $transaction->account_id = $account_id;
+        $transaction->user_id = $user_id;
+        $transaction->transaction_date = $transaction_date;
+        $transaction->transaction_reference = $transaction_reference;
+        $transaction->transaction_amount = $transaction_amount;
+        $transaction->transaction_type = $transaction_type;
+        $transaction->transaction_note = $transaction_note;
+        $transaction->save();
+        return $transaction;
+    }
+
+    public function update(
+        $transaction_id,
+        $account_id,
+        $user_id,
+        $transaction_date,
+        $transaction_reference,
+        $transaction_amount,
+        $transaction_type,
+        $transaction_note
+    ) {
+        $transaction = Transaction::find($transaction_id);
+        $transaction->account_id = $account_id;
+        $transaction->user_id = $user_id;
+        $transaction->transaction_date = $transaction_date;
+        $transaction->transaction_reference = $transaction_reference;
+        $transaction->transaction_amount = $transaction_amount;
+        $transaction->transaction_type = $transaction_type;
+        $transaction->transaction_note = $transaction_note;
+        $transaction->save();
+        return $transaction;
+    }
+
+    public function findByIdAndUserId($id, $user_id)
+    {
+        return Transaction::where('id', $id)->where('user_id', $user_id)->first();
+    }
+
+    public function findAll($user_id, $filter, $limit)
+    {
+        return Transaction::where('user_id', $user_id)
+            ->Where('transaction_date', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_reference', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_amount', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_type', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_note', 'like', '%' . $filter . '%')->paginate($limit);
+    }
+
+    public function findAllDeleted($user_id, $filter, $limit)
+    {
+        return Transaction::withTrashed()
+            ->Where('transaction_date', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_reference', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_amount', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_type', 'like', '%' . $filter . '%')
+            ->orWhere('transaction_note', 'like', '%' . $filter . '%')->paginate($limit);
+    }
+
+    public function delete($id)
+    {
+        $transaction = Transaction::find($id);
+        return $transaction->delete();
+    }
+
+    public function restore($id)
+    {
+        return Transaction::withTrashed()
+            ->where('id', $id)
+            ->restore();
+    }
+
+    public function addHistory(
+        $transaction_id,
+        $user_id,
+        $history_note,
+        $history_amount_before,
+        $history_amount_after
+    ) {
+        $transaction = new TransactionHistory();
+        $transaction->transaction_id = $transaction_id;
+        $transaction->user_id = $user_id;
+        $transaction->history_note = $history_note;
+        $transaction->history_amount_before = $history_amount_before;
+        $transaction->history_amount_after = $history_amount_after;
+        return $transaction->save();
+    }
+
+    public function deleteHistory($id)
+    {
+        $transaction = TransactionHistory::where('transaction_id', $id);
+        return $transaction->delete();
+    }
+
+    public function restoreHistory($id)
+    {
+        return Transaction::withTrashed()
+            ->where('transaction_id', $id)
+            ->restore();
+    }
+
+    public function getSummaryDaily($start = null, $end = null)
+    {
+        return Transaction::selectRaw('transaction_date date, sum(transaction_amount) amount')
+            ->whereBetween('transaction_date', [$start, $end])
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get();
+    }
+
+    public function getSummaryMonthly($start = null, $end = null)
+    {
+        return Transaction::selectRaw('month(transaction_date) month, monthname(transaction_date) monthname, sum(transaction_amount) amount')
+            ->whereBetween('transaction_date', [$start, $end])
+            ->groupBy('month', 'monthname')
+            ->orderBy('month', 'asc')
+            ->get();
+    }
+}

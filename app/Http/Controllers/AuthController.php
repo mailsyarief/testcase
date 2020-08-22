@@ -50,6 +50,7 @@ class AuthController extends Controller
             return ResponseProvider::http(false, $validator->messages(), NULL, 422);
 
         $credentials = request(['email', 'password']);
+        
 
         if (!$token = auth()->attempt($credentials)) {
             return ResponseProvider::http(false, "Unauthorized", NULL, 401);
