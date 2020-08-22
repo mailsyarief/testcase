@@ -16,7 +16,6 @@ class Account extends Model
         'account_type',
         'account_description',
         'account_limit',
-        'account_reset_date'
     ];
 
     protected $hidden = [];

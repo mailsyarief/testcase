@@ -34,6 +34,6 @@ class Transaction extends Model
 
     public function History()
     {
-        return $this->hasMany('App\TransactionHistory', 'id', 'transaction_id');
+        return $this->hasMany('App\TransactionHistory', 'transaction_id', 'id');
     }
 }

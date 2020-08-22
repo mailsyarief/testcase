@@ -5,18 +5,20 @@ namespace App\Http\Controllers;
 use App\Repositories\TransactionRepository;
 use Illuminate\Http\Request;
 use App\Providers\ResponseProvider;
+use App\Repositories\AccountRepository;
 use Illuminate\Support\Facades\Validator;
 use DB;
 
 class TransactionController extends Controller
 {
     //
-    protected $transaction;
+    protected $transaction, $account;
 
-    public function __construct(TransactionRepository $transaction)
+    public function __construct(TransactionRepository $transaction, AccountRepository $account)
     {
         $this->middleware('jwt');
         $this->transaction = $transaction;
+        $this->account = $account;
     }
 
     public function create(Request $request)
@@ -35,6 +37,10 @@ class TransactionController extends Controller
 
         $userData = auth()->user();
 
+        $limit = $this->checkLimit($request->input('account_id'), $request->input('transaction_amount'));
+        if ($limit)
+            return ResponseProvider::http(false, "Transaction Above Monthly Limit", NULL, 400);
+
         $this->transaction->create(
             $request->input('account_id'),
             $userData->id,
@@ -50,9 +56,24 @@ class TransactionController extends Controller
 
     public function restore($transaction_id)
     {
-        $transaction = $this->transaction->restore($transaction_id);
+
+        $userData = auth()->user();
+        $transaction = $this->transaction->findByIdAndUserId($transaction_id, $userData->id);
         if (!$transaction) return ResponseProvider::http(true, "Transaction Not Found", NULL, 200);
-        return ResponseProvider::http(true, "Transaction Restored", NULL, 200);
+
+        DB::beginTransaction();
+        try {
+
+            $this->transaction->restore($transaction_id);
+            $this->transaction->restoreHistory($transaction_id);
+
+            DB::commit();
+            return ResponseProvider::http(true, "Transaction Restored", NULL, 200);
+        } catch (\Throwable $th) {
+            dd($th);
+            DB::rollback();
+            return ResponseProvider::http(false, "Server Error", NULL, 500);
+        }
     }
 
     public function getOne($transaction_id)
@@ -64,19 +85,30 @@ class TransactionController extends Controller
 
         $transaction->User;
         $transaction->Account;
+        $transaction->History;
 
         return ResponseProvider::http(true, "Transaction Details", $transaction, 200);
     }
 
     public function delete($transaction_id)
     {
+
         $userData = auth()->user();
         $transaction = $this->transaction->findByIdAndUserId($transaction_id, $userData->id);
         if (!$transaction) return ResponseProvider::http(true, "Transaction Not Found", NULL, 200);
 
-        $this->transaction->delete($transaction_id);
+        DB::beginTransaction();
+        try {
 
-        return ResponseProvider::http(true, "Transaction Deleted", NULL, 200);
+            $this->transaction->delete($transaction_id);
+            $this->transaction->deleteHistory($transaction_id);
+
+            DB::commit();
+            return ResponseProvider::http(true, "Transaction Deleted", NULL, 200);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            return ResponseProvider::http(false, "Server Error", NULL, 500);
+        }
     }
 
     public function getAll(Request $request)
@@ -144,14 +176,12 @@ class TransactionController extends Controller
                     $request->input('transaction_amount')
                 );
             }
-
             DB::commit();
+            return ResponseProvider::http(true, "Update Transaction Success", NULL, 200);
         } catch (\Exception $e) {
             return ResponseProvider::http(false, "Server Error", NULL, 500);
             DB::rollback();
         }
-
-        return ResponseProvider::http(true, "Update Transaction Success", NULL, 200);
     }
 
     public function getSummaryMonthly(Request $request)
@@ -172,5 +202,11 @@ class TransactionController extends Controller
 
     private function checkLimit($account_id, $transaction_amount)
     {
+        $account = $this->account->findById($account_id);
+        $month = date("m");
+        $year = date("Y");
+        $transaction = $this->transaction->getSummaryByAccountId($account_id, $month, $year);
+        if ($account->account_limit <= 0) return false;
+        return $transaction->amount + $transaction_amount >= $account->account_limit;
     }
 }

@@ -120,9 +120,20 @@ class TransactionRepository
 
     public function restoreHistory($id)
     {
-        return Transaction::withTrashed()
+        return TransactionHistory::withTrashed()
             ->where('transaction_id', $id)
             ->restore();
+    }
+
+    public function getSummaryByAccountId($account_id, $month, $year)
+    {
+        return Transaction::selectRaw('year(transaction_date) year, month(transaction_date) month, sum(transaction_amount) amount')
+        ->where('account_id', $account_id)
+        ->whereMonth('transaction_date', $month)
+        ->whereYear('transaction_date', $year)
+        ->groupBy('year', 'month')
+        ->orderBy('amount', 'asc')
+        ->first();
     }
 
     public function getSummaryDaily($start = null, $end = null)

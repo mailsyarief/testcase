@@ -20,7 +20,6 @@ class CreateAccountsTable extends Migration
             $table->string('account_type');
             $table->string('account_description');
             $table->decimal('account_limit', 12, 2);
-            $table->date('account_reset_date');
             $table->softDeletes();
             $table->timestamps();
         });
