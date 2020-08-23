@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Transaction;
 use App\TransactionHistory;
+use DB;
 
 class TransactionRepository
 {
@@ -65,22 +66,41 @@ class TransactionRepository
 
     public function findAll($user_id, $filter, $limit)
     {
-        return Transaction::where('user_id', $user_id)
-            ->Where('transaction_date', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_reference', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_amount', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_type', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_note', 'like', '%' . $filter . '%')->paginate($limit);
+        $transaction = DB::table('transactions')
+            ->leftJoin('accounts', 'accounts.id', '=', 'transactions.account_id')
+            ->select('transactions.*', 'accounts.account_name')
+            ->where('transactions.deleted_at', '=', null)
+            ->where('transactions.user_id', $user_id)
+            ->where(function ($query) use ($filter) {
+                $query
+                    ->orWhere('transaction_reference', 'like', '%' . $filter . '%')
+                    ->orWhere('transaction_amount', 'like', '%' . $filter . '%')
+                    ->orWhere('transaction_type', 'like', '%' . $filter . '%')
+                    ->orWhere('transaction_note', 'like', '%' . $filter . '%')
+                    ->orWhere('accounts.account_name', 'like', '%' . $filter . '%');
+            })->paginate($limit);
+
+        return $transaction;
     }
 
     public function findAllDeleted($user_id, $filter, $limit)
     {
-        return Transaction::withTrashed()
-            ->Where('transaction_date', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_reference', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_amount', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_type', 'like', '%' . $filter . '%')
-            ->orWhere('transaction_note', 'like', '%' . $filter . '%')->paginate($limit);
+
+        $transaction = DB::table('transactions')
+            ->leftJoin('accounts', 'accounts.id', '=', 'transactions.account_id')
+            ->select('transactions.*', 'accounts.account_name')
+            ->where('transactions.user_id', $user_id)
+            ->where('transactions.deleted_at', '!=', null)
+            ->where(function ($query) use ($filter) {
+                $query
+                    ->orWhere('transaction_reference', 'like', '%' . $filter . '%')
+                    ->orWhere('transaction_amount', 'like', '%' . $filter . '%')
+                    ->orWhere('transaction_type', 'like', '%' . $filter . '%')
+                    ->orWhere('transaction_note', 'like', '%' . $filter . '%')
+                    ->orWhere('accounts.account_name', 'like', '%' . $filter . '%');
+            })->paginate($limit);
+
+        return $transaction;
     }
 
     public function delete($id)
@@ -128,27 +148,31 @@ class TransactionRepository
     public function getSummaryByAccountId($account_id, $month, $year)
     {
         return Transaction::selectRaw('year(transaction_date) year, month(transaction_date) month, sum(transaction_amount) amount')
-        ->where('account_id', $account_id)
-        ->whereMonth('transaction_date', $month)
-        ->whereYear('transaction_date', $year)
-        ->groupBy('year', 'month')
-        ->orderBy('amount', 'asc')
-        ->first();
+            ->where('account_id', $account_id)
+            ->whereMonth('transaction_date', $month)
+            ->whereYear('transaction_date', $year)
+            ->groupBy('year', 'month')
+            ->orderBy('amount', 'asc')
+            ->first();
     }
 
-    public function getSummaryDaily($start = null, $end = null)
+    public function getSummaryDaily($start = null, $end = null, $user_id)
     {
         return Transaction::selectRaw('transaction_date date, sum(transaction_amount) amount')
             ->whereBetween('transaction_date', [$start, $end])
+            ->where('deleted_at', '=', null)
+            ->where('user_id', $user_id)
             ->groupBy('date')
             ->orderBy('date', 'asc')
             ->get();
     }
 
-    public function getSummaryMonthly($start = null, $end = null)
+    public function getSummaryMonthly($start = null, $end = null, $user_id)
     {
         return Transaction::selectRaw('month(transaction_date) month, monthname(transaction_date) monthname, sum(transaction_amount) amount')
             ->whereBetween('transaction_date', [$start, $end])
+            ->where('deleted_at', '=', null)
+            ->where('user_id', $user_id)
             ->groupBy('month', 'monthname')
             ->orderBy('month', 'asc')
             ->get();

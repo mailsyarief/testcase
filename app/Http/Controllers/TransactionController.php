@@ -57,10 +57,6 @@ class TransactionController extends Controller
     public function restore($transaction_id)
     {
 
-        $userData = auth()->user();
-        $transaction = $this->transaction->findByIdAndUserId($transaction_id, $userData->id);
-        if (!$transaction) return ResponseProvider::http(true, "Transaction Not Found", NULL, 200);
-
         DB::beginTransaction();
         try {
 
@@ -186,17 +182,19 @@ class TransactionController extends Controller
 
     public function getSummaryMonthly(Request $request)
     {
+        $userData = auth()->user();
         $start = $request->query('start');
         $end = $request->query('end');
-        $transaction = $this->transaction->getSummaryMonthly($start, $end);
+        $transaction = $this->transaction->getSummaryMonthly($start, $end, $userData->id);
         return ResponseProvider::http(true, "Monthly Summary", $transaction, 200);
     }
 
     public function getSummaryDaily(Request $request)
     {
+        $userData = auth()->user();
         $start = $request->query('start');
         $end = $request->query('end');
-        $transaction = $this->transaction->getSummaryDaily($start, $end);
+        $transaction = $this->transaction->getSummaryDaily($start, $end, $userData->id);
         return ResponseProvider::http(true, "Daily Summary", $transaction, 200);
     }
 

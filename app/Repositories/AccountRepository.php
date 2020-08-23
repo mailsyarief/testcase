@@ -18,8 +18,7 @@ class AccountRepository
         $account_name,
         $account_type,
         $account_description,
-        $account_limit,
-        $account_reset_date
+        $account_limit
     ) {
         $account = new Account();
         $account->user_id = $user_id;
@@ -27,7 +26,6 @@ class AccountRepository
         $account->account_type = $account_type;
         $account->account_description = $account_description;
         $account->account_limit = $account_limit;
-        $account->account_reset_date = $account_reset_date;
         $account->save();
         return $account;
     }
@@ -37,15 +35,13 @@ class AccountRepository
         $account_name,
         $account_type,
         $account_description,
-        $account_limit,
-        $account_reset_date
+        $account_limit
     ) {
         $account = Account::find($account_id);
         $account->account_name = $account_name;
         $account->account_type = $account_type;
         $account->account_description = $account_description;
         $account->account_limit = $account_limit;
-        $account->account_reset_date = $account_reset_date;
         $account->save();
         return $account;
     }
@@ -76,17 +72,24 @@ class AccountRepository
     public function findAll($user_id, $filter, $limit)
     {
         return Account::where('user_id', $user_id)
-            ->Where('account_name', 'like', '%' . $filter . '%')
-            ->orWhere('account_type', 'like', '%' . $filter . '%')
-            ->orWhere('account_description', 'like', '%' . $filter . '%')->paginate($limit);
+            ->where(function ($query) use ($filter) {
+                $query
+                    ->orWhere('account_type', 'like', '%' . $filter . '%')
+                    ->orWhere('account_name', 'like', '%' . $filter . '%')
+                    ->orWhere('account_description', 'like', '%' . $filter . '%');
+            })->paginate($limit);
     }
 
     public function findAllDeleted($user_id, $filter, $limit)
     {
         return Account::withTrashed()
             ->where('user_id', $user_id)
-            ->Where('account_name', 'like', '%' . $filter . '%')
-            ->orWhere('account_type', 'like', '%' . $filter . '%')
-            ->orWhere('account_description', 'like', '%' . $filter . '%')->paginate($limit);
+            ->where('deleted_at','!=', null)
+            ->where(function ($query) use ($filter) {
+                $query
+                    ->orWhere('account_type', 'like', '%' . $filter . '%')
+                    ->orWhere('account_name', 'like', '%' . $filter . '%')
+                    ->orWhere('account_description', 'like', '%' . $filter . '%');
+            })->paginate($limit);
     }
 }

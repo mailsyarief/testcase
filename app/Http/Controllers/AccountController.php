@@ -25,7 +25,6 @@ class AccountController extends Controller
             'account_type' => 'required|string',
             'account_description' => 'required|string',
             'account_limit' => 'required|integer',
-            'account_reset_date' => 'required|date',
         ]);
 
         if ($validator->fails())
@@ -38,8 +37,7 @@ class AccountController extends Controller
             $request->input('account_name'),
             $request->input('account_type'),
             $request->input('account_description'),
-            $request->input('account_limit'),
-            $request->input('account_reset_date'),
+            $request->input('account_limit')
         );
 
         return ResponseProvider::http(true, "Create Account Success", NULL, 200);
@@ -104,8 +102,7 @@ class AccountController extends Controller
             'account_name' => 'required',
             'account_type' => 'required',
             'account_description' => 'required',
-            'account_limit' => 'required',
-            'account_reset_date' => 'required',
+            'account_limit' => 'required'
         ]);
 
         if ($validator->fails())
@@ -122,8 +119,7 @@ class AccountController extends Controller
             $request->input('account_name'),
             $request->input('account_type'),
             $request->input('account_description'),
-            $request->input('account_limit'),
-            $request->input('account_reset_date'),
+            $request->input('account_limit')
         );
 
         return ResponseProvider::http(true, "Update Account Success", NULL, 200);
