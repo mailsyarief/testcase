@@ -50,7 +50,7 @@ class AuthController extends Controller
             return ResponseProvider::http(false, $validator->messages(), NULL, 422);
 
         $credentials = request(['email', 'password']);
-        
+
 
         if (!$token = auth()->attempt($credentials)) {
             return ResponseProvider::http(false, "Unauthorized", NULL, 401);
@@ -63,6 +63,19 @@ class AuthController extends Controller
     public function user()
     {
         return ResponseProvider::http(true, "User Data", auth()->user(), 200);
+    }
+
+    public function users()
+    {
+        $users = $this->user->findAll();
+        return ResponseProvider::http(true, "User Data", $users, 200);
+    }
+
+    public function userDetail($user_id)
+    {
+        $user = $this->user->findById($user_id);
+        if(!$user) return ResponseProvider::http(false, "User Not Found", null, 404);
+        return ResponseProvider::http(true, "User Data", $user, 200);
     }
 
     public function logout()

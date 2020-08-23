@@ -11,6 +11,8 @@ Route::group([
     Route::post('logout', 'AuthController@logout');
 
     Route::get('user', 'AuthController@user');
+    Route::get('users', 'AuthController@users');
+    Route::get('user/{user_id}', 'AuthController@userDetail');
 });
 
 Route::group([
