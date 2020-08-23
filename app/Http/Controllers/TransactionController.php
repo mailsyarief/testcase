@@ -112,8 +112,16 @@ class TransactionController extends Controller
         $userData = auth()->user();
         $limit = $request->query('limit');
         $filter = $request->query('filter');
+        $by = $request->query('by');
+        $order = $request->query('order');
 
-        $transaction = $this->transaction->findAll($userData->id, $filter, $limit);
+        if(!$by) $by = 'id';
+        if(!$order) $order = 'desc';
+
+        // echo $by;
+        // echo $order;
+
+        $transaction = $this->transaction->findAll($userData->id, $filter, $limit, $by, $order);
 
         return ResponseProvider::http(true, "List Transaction", $transaction, 200);
     }

@@ -64,7 +64,7 @@ class TransactionRepository
         return Transaction::where('id', $id)->where('user_id', $user_id)->first();
     }
 
-    public function findAll($user_id, $filter, $limit)
+    public function findAll($user_id, $filter, $limit, $by, $order)
     {
         $transaction = DB::table('transactions')
             ->leftJoin('accounts', 'accounts.id', '=', 'transactions.account_id')
@@ -78,7 +78,7 @@ class TransactionRepository
                     ->orWhere('transaction_type', 'like', '%' . $filter . '%')
                     ->orWhere('transaction_note', 'like', '%' . $filter . '%')
                     ->orWhere('accounts.account_name', 'like', '%' . $filter . '%');
-            })->paginate($limit);
+            })->orderBy($by, $order)->paginate($limit);
 
         return $transaction;
     }
